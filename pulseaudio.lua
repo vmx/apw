@@ -20,7 +20,7 @@
 local pulseaudio = {}
 
 
-local cmd = "pacmd"
+local cmd = "pactl"
 local default_sink = ""
 
 function pulseaudio:Create()
@@ -38,7 +38,7 @@ function pulseaudio:Create()
 end
 
 function pulseaudio:UpdateState()
-	local f = io.popen(cmd .. " dump")
+	local f = io.popen(cmd .. " list sinks")
 
 	-- if the cmd cannot be found
 	if f == nil then
@@ -49,29 +49,38 @@ function pulseaudio:UpdateState()
 	f:close()
 
 	-- find default sink
-	default_sink = string.match(out, "set%-default%-sink ([^\n]+)")
-
-	if default_sink == nil then
-		default_sink = ""
-		return false
-	end
+--	default_sink = string.match(out, "set%-default%-sink ([^\n]+)")
+--
+--	if default_sink == nil then
+--		default_sink = ""
+--		return false
+--	end
+	default_sink = string.match(out, "Sink #(%d+)")
 
 	-- retrieve volume of default sink
-	for sink, value in string.gmatch(out, "set%-sink%-volume ([^%s]+) (0x%x+)") do
-		if sink == default_sink then
-			self.Volume = tonumber(value) / 0x10000
-		end
-	end
+--	for sink, value in string.gmatch(out, "set%-sink%-volume ([^%s]+) (0x%x+)") do
+--		if sink == default_sink then
+--			self.Volume = tonumber(value) / 0x10000
+--		end
+--	end
+
+	--value = string.gmatch(out, "\tVolume: .* ([0-9][0-9]*\)% .*") do
+	value = string.match(out, "Volume: front%-left: (%d+)")
+	--value = "22015"
+	self.Volume = tonumber(value) / 0x10000
+	--value = string.match(out, "Volume: .* (%d+)%%")
+	--self.Volume = tonumber(value) / 100
 
 	-- retrieve mute state of default sink
-	local m
-	for sink, value in string.gmatch(out, "set%-sink%-mute ([^%s]+) (%a+)") do
-		if sink == default_sink then
-			m = value
-		end
-	end
+--	local m
+--	for sink, value in string.gmatch(out, "set%-sink%-mute ([^%s]+) (%a+)") do
+--		if sink == default_sink then
+--			m = value
+--		end
+--	end
 
-	self.Mute = m == "yes"
+--	self.Mute = m == "yes"
+	self.Mute = string.match(out, "Mute: (%a+)") == "yes"
 end
 
 -- Run process and wait for it to end
